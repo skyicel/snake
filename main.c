@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define HEIGHT 20
-#define WIDTH 20
+#define HEIGHT 5
+#define WIDTH 5
 #define MAX_SNAKE_LENGTH 400
 
 typedef struct
@@ -37,7 +37,11 @@ void game();
 
 void change_snake_direction(snake* snake, int ch);
 
-int check_colision_with_apple(snake* snake, apple apple);
+int check_head_snake_colision_with_apple(snake* snake, apple apple);
+
+int check_full_body_snake_colision_with_apple(snake* snake, apple apple);
+
+int check_snake_colision_with_itself(snake* snake);
 
 void update_snake(snake* snake);
 
@@ -109,6 +113,8 @@ void game() {
 
     int ch;
 
+    int game_over = 0;
+
     while (1) {
         ch = getch();
         
@@ -122,19 +128,36 @@ void game() {
 
         update_snake(snake);
 
-        if (check_colision_with_apple(snake, apple)) {
-            apple.position.x = rand() % WIDTH;
-            apple.position.y = rand() % HEIGHT;
+        if (check_head_snake_colision_with_apple(snake, apple)) {
+
+            while (check_full_body_snake_colision_with_apple(snake, apple)) {
+                apple.position.x = rand() % WIDTH;
+                apple.position.y = rand() % HEIGHT;
+            }
 
             snake->points[snake->size] = snake_tail_position;
             snake->size++;
         }
 
+        if (check_snake_colision_with_itself(snake)) {
+            game_over = 1;
+            break;
+        }
+
         print_current_game_state(snake, apple);
 
-        napms(120);
+        napms(100);
 
     }
+
+    if (game_over) {
+        clear();
+        printf("gameover");
+        refresh();
+    }
+
+    nodelay(stdscr, FALSE);
+    getch();
 
     free(snake->points);
     free(snake);
@@ -168,9 +191,33 @@ void update_snake(snake* snake) {
     }
 }
 
-int check_colision_with_apple(snake* snake, apple apple) {
+int check_head_snake_colision_with_apple(snake* snake, apple apple) {
+
+
     if ((snake->points[0].x == apple.position.x) && (snake->points[0].y == apple.position.y)) {
         return 1;
+    }
+
+    return 0;
+}
+
+int check_full_body_snake_colision_with_apple(snake* snake, apple apple) {
+    for (int i = 0; i < snake->size; i++) {
+        if ((snake->points[i].x == apple.position.x) && (snake->points[i].y == apple.position.y)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int check_snake_colision_with_itself(snake* snake) {
+    for (int i = 0; i < snake->size; i++) {
+        for (int j = 0; j < snake->size; j++) {
+            if (i != j && snake->points[j].x == snake->points[i].x && snake->points[j].y == snake->points[i].y) {
+                return 1;
+            }
+        }
     }
 
     return 0;
